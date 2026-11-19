@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hệ thống quản lý thời gian học tập cho sinh viên</title>
+<link rel="stylesheet" href="./styles.css" />
+<script defer src="./app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="toggle-nav-btn" id="toggleNavBtn" type="button" title="Ẩn/Hiện thanh điều hướng">☰</button>
+    <div class="brand" onclick="switchView('home')" title="Về trang chủ">Quản lý thời gian học tập</div>
+  </div>
+  <div class="user-label" id="userLabel"></div>
+  <div class="top-actions">
+    <button class="btn" id="exportPdfBtn" type="button" title="In hoặc lưu trang thành file PDF">🖨️ In</button>
+    <button class="btn" id="registerButton" type="button">Đăng ký</button>
+    <button class="btn" id="loginButton" type="button">Đăng nhập</button>
+    <button class="gear" id="settingsButton" aria-label="Cài đặt">⚙</button>
+  </div>
+</header>
+
+<section class="settings" id="settings" hidden>
+  <h3>Cài đặt giao diện</h3>
+  <div class="theme">
+    <button class="btn" id="light">☀ Sáng</button>
+    <button class="btn" id="dark">☾ Tối</button>
+  </div>
+  <label>Màu nền trang</label>
+  <div class="palette" id="pagePalette"></div>
+  <label>Màu phụ</label>
+  <div class="palette" id="gridPalette"></div>
+  <label class="remind-row"><input type="checkbox" id="remindToggle"> 🔔 Nhắc nhở giờ học và nhiệm vụ</label>
+  <div class="remind-note" id="remindNote"></div>
+  <div class="settings-actions">
+    <button class="btn" id="reset">Đặt lại mặc định</button>
+    <button class="btn" id="clearAllData">Xóa dữ liệu</button>
+    <button class="btn" data-act="backup" type="button">💾 Sao lưu</button>
+    <button class="btn" data-act="restore" type="button">📂 Khôi phục</button>
+  </div>
+</section>
+
+<div id="navSlide"><div id="navInner"><div id="mainNavBar" style="background: var(--page); border-bottom: 2px solid var(--line); padding: 8px 18px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+  <button class="btn" id="homeViewBtn" type="button" style="font-weight: bold;">🏠 Trang chủ</button>
+  <button class="btn" id="calendarViewBtn" type="button" style="font-weight: bold;">📅 Lịch học</button>
+  <button class="btn" id="taskViewBtn" type="button" style="font-weight: bold;">📋 Nhiệm vụ & Điểm số</button>
+  <button class="btn" id="toolsViewBtn" type="button" style="font-weight: bold;">🛠️ Dụng cụ học tập</button>
+  <button class="btn" id="statsViewBtn" type="button" style="font-weight: bold;">📊 Thống kê</button>
+  <button class="btn" id="docViewBtn" type="button" style="font-weight: bold;">📚 Tài liệu</button>
+  <button class="btn" id="dataViewBtn" type="button" style="font-weight: bold;">🗂️ Dữ liệu</button>
+</div></div></div>
+
+<nav class="nav" id="navDateBar">
+  <button class="nav-btn" id="previous">Tuần trước<span>←</span></button>
+  <button class="date-btn" id="dateButton" title="Nhấn để về hôm nay"></button>
+  <button class="nav-btn" id="next">Tuần sau<span>→</span></button>
+</nav>
+
+<main class="home-page" id="homeMain" hidden>
+  <div class="home-hero">
+    <h1 class="home-system-name">Hệ thống quản lý thời gian học tập cho sinh viên</h1>
+    <div id="homeGreeting" class="home-greeting"></div>
+    <p>Lên lịch, theo dõi, tối ưu thời gian học.</p>
+    <div id="liveClock" style="margin-top: 8px; font-weight: bold; font-size: 13px; opacity: 0.85;"></div>
+  </div>
+
+  <div class="home-row">
+    <div class="quick-card" onclick="switchView('calendar')">
+      <h3>📅 Lịch học</h3>
+      <p>Sắp xếp thời khóa biểu thông minh theo tuần hoặc ngày, linh hoạt tùy chỉnh màu sắc sự kiện.</p>
+    </div>
+    <div class="quick-card" onclick="switchView('tasks')">
+      <h3>📋 Nhiệm vụ & Điểm số</h3>
+      <p>Kiểm soát tiến độ hoàn thành đồ án, bài tập và theo dõi điểm GPA tích lũy hệ 4 chuẩn xác.</p>
+    </div>
+    <div class="quick-card" onclick="switchView('tools')">
+      <h3>🛠️ Dụng cụ học tập</h3>
+      <p>Tăng cường hiệu suất làm việc với bộ đặt giờ tập trung, sổ ghi nhớ nhanh và máy tính toán học.</p>
+    </div>
+  </div>
+
+  <div class="home-row" style="margin-bottom: 14px;">
+    <div class="quick-card" onclick="switchView('stats')">
+      <h3>📊 Thống kê</h3>
+      <p>Theo dõi giờ học thật, mục tiêu tuần, chuỗi ngày học và bản đồ nhiệt học tập.</p>
+    </div>
+    <div class="quick-card" onclick="switchView('docs')">
+      <h3>📚 Tài liệu</h3>
+      <p>Lưu trữ tài liệu học phần, đường dẫn, tải file đính kèm và ghi chú ôn tập cốt lõi.</p>
+    </div>
+    <div class="quick-card" onclick="switchView('data')">
+      <h3>🗂️ Dữ liệu</h3>
+      <p>Tra cứu lịch sử toàn bộ các thao tác thêm, sửa, xóa sự kiện, nhiệm vụ và tài liệu đã thực hiện.</p>
+    </div>
+  </div>
+
+  <section class="home-stats" id="homeStats">
+    <div class="home-stats-head">
+      <h3>📊 Thống kê nhanh</h3>
+      <a href="#" onclick="switchView('stats'); return false;">Xem chi tiết →</a>
+    </div>
+    <div class="home-tiles" id="homeTiles"></div>
+  </section>
+</main>
+
+<main class="tools-page" id="toolsMain" hidden>
+  <div class="tools-dashboard-layout">
+    <div class="tools-col-left">
+      <div class="tools-container">
+        <div class="tools-header">
+          <h2>📝 Ghi nhớ</h2>
+          <button class="btn" id="addNoteBtn" type="button">＋ Thêm ghi chú</button>
+        </div>
+        <div class="notes-scroll-area">
+          <div class="notes-grid" id="notesGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tools-col-right">
+      <div class="tool-card">
+        <h3>🧮 Máy tính</h3>
+        <input id="calcInput" type="text" value="" placeholder="Ví dụ: (8.5*3 + 7*4) / 7" style="width: 100%; padding: 8px; border: 2px solid var(--line); border-radius: 6px; background: var(--page); color: var(--ink); font-size: 14px; margin-bottom: 6px;">
+        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+          <button class="btn" type="button" style="flex: 1; padding: 6px;" onclick="calculateMath()">Tính kết quả</button>
+          <button class="btn" type="button" style="padding: 6px;" onclick="byId('calcInput').value=''; byId('calcResult').textContent='---'">Xóa</button>
+        </div>
+        <div style="font-size: 14px; font-weight: bold;">
+          Kết quả: <span id="calcResult" style="color: #2a75d3;">---</span>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <h3>⏱️ Đặt giờ</h3>
+        <div class="pomodoro-display" id="pomoTimer">45:00</div>
+
+        <div class="pomo-row">
+          <input id="customMinInput" type="number" min="1" max="180" value="45" aria-label="Số phút" style="width: 64px; padding: 6px; text-align: center; border: 2px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 700;">
+          <span style="font-weight: bold; font-size: 13px;">phút</span>
+          <select id="pomoSubject" style="padding: 6px 8px; border: 2px solid var(--line); border-radius: 8px; font-size: 13px; max-width: 170px;"></select>
+        </div>
+
+        <div class="pomo-row">
+          <button class="btn pomo-main" id="pomoStart" type="button">Bắt đầu</button>
+          <button class="btn pomo-main" id="pomoReset" type="button">Đặt lại</button>
+        </div>
+        <div class="pomo-row">
+          <button class="btn pomo-preset" type="button" onclick="setPomoTime(45, 'study')">Học (45p)</button>
+          <button class="btn pomo-preset" type="button" onclick="setPomoTime(10, 'break')">Nghỉ (10p)</button>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <h3>💡 Lời động viên</h3>
+        <div id="quoteDisplay" style="font-size: 13px; font-style: italic; margin-bottom: 8px; line-height: 1.4;">
+          "Học, học nữa, học mãi - Không ngừng nỗ lực mỗi ngày để chạm tới thành công!"
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <button class="btn" type="button" style="padding: 4px 10px; font-size: 12px;" onclick="changeQuote()">Đổi câu nói</button>
+          <span style="font-size: 11px; opacity: 0.8;" id="todayBadge">HUMG Student</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<main class="stats-page" id="statsMain" hidden>
+  <div class="stats-container">
+    <div class="stats-header">
+      <h2>📊 Thống kê thời gian học</h2>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <span class="stats-sub" id="statsToday"></span>
+        <button class="btn" id="addSessionBtn" type="button">＋ Ghi giờ học</button>
+      </div>
+    </div>
+    <div class="stats-empty" id="statsEmpty" hidden>Chưa có phiên học nào. Vào <b>Dụng cụ học tập → Đặt giờ</b>, chọn môn rồi bấm Bắt đầu; mỗi phiên "Học" chạy hết giờ sẽ được ghi lại. Học ngoài web thì bấm "＋ Ghi giờ học".</div>
+    <div class="stats-grid-2">
+      <section class="stats-card">
+        <h3>🎯 Mục tiêu giờ học tuần này</h3>
+        <div class="goal-line"><b id="goalDone">0p</b> / <input id="weeklyGoalInput" type="number" min="1" max="100" step="0.5" title="Mục tiêu (giờ/tuần)"> giờ <span id="goalPct"></span></div>
+        <div class="progress-bar-container"><div class="progress-bar-fill" id="goalBar"></div></div>
+      </section>
+      <section class="stats-card">
+        <h3>📝 Tổng kết tuần</h3>
+        <div id="weekSummary"></div>
+      </section>
+      <section class="stats-card">
+        <h3>📈 Giờ học 7 ngày gần nhất</h3>
+        <div class="bar-chart" id="barChart"></div>
+      </section>
+      <section class="stats-card subject-card">
+        <h3>📚 Môn học (30 ngày)</h3>
+        <div id="subjectBars"></div>
+      </section>
+      <section class="stats-card stats-wide">
+        <h3>🔥 Chuỗi ngày học & 12 tuần gần nhất</h3>
+        <div id="streakLine" class="streak-line"></div>
+        <div class="heatmap-wrap">
+          <div class="heat-days"><span>T2</span><span></span><span>T4</span><span></span><span>T6</span><span></span><span>CN</span></div>
+          <div class="heatmap" id="heatmap"></div>
+        </div>
+        <div class="heat-legend">Ít <i class="heat-cell l0"></i><i class="heat-cell l1"></i><i class="heat-cell l2"></i><i class="heat-cell l3"></i><i class="heat-cell l4"></i> Nhiều</div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<main class="docs-page" id="docsMain" hidden>
+  <div class="docs-container">
+    <div class="docs-header">
+      <h2>📚 Tài liệu</h2>
+      <button class="btn" id="addDocBtn" type="button">＋ Thêm tài liệu</button>
+    </div>
+    <div class="docs-scroll-area">
+      <div class="docs-grid" id="docsGrid">      </div>
+    </div>
+  </div>
+</main>
+
+<main class="data-page" id="dataMain" hidden>
+  <div class="data-container">
+    <div class="data-header">
+      <h2>🗂️ Dữ liệu</h2>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn" data-act="backup" type="button">💾 Sao lưu</button>
+        <button class="btn" data-act="restore" type="button">📂 Khôi phục</button>
+        <button class="btn" id="clearLogsBtn" type="button" style="background: #f4c5c5; border-color: #d59999;">Xóa lịch sử</button>
+      </div>
+    </div>
+    <div class="log-table-wrap">
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th style="width: 160px;">Thời gian</th>
+            <th style="width: 120px;">Hành động</th>
+            <th>Nội dung chi tiết</th>
+          </tr>
+        </thead>
+        <tbody id="logTableBody">        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<main class="calendar-wrap" id="calendarMain">
+  <div class="calendar" id="calendarContainer">
+    <div class="heads" id="heads"></div>
+    <div class="schedule" id="scheduleContainer">
+      <div class="times" id="times"></div>
+      <div class="columns" id="columns"></div>
+    </div>
+  </div>
+</main>
+
+<main class="tasks-page" id="tasksMain" hidden>
+  <div class="httt-dashboard-layout">
+    <div class="httt-col-left">
+      <div class="tasks-container">
+        <div class="tasks-header">
+          <h2>📋 Nhiệm vụ</h2>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="taskSubjectFilter" title="Lọc theo môn học" style="padding: 6px; border: 2px solid var(--line); border-radius: 6px; background: var(--page); color: var(--ink); max-width: 150px;"></select>
+            <button class="btn" id="addTaskBtn" type="button">＋ Thêm nhiệm vụ</button>
+          </div>
+        </div>
+        <div class="exam-strip" id="examStrip"></div>
+        <div class="task-scroll-area">
+          <div class="task-list" id="taskList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="httt-col-right">
+      <div class="httt-card">
+        <h3>🎯 Mục tiêu</h3>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div>Tổng nhiệm vụ</div>
+            <div class="num" id="statTotal">0</div>
+          </div>
+          <div class="stat-box">
+            <div>Đã hoàn thành</div>
+            <div class="num" id="statCompleted">0</div>
+          </div>
+          <div class="stat-box">
+            <div>Tiến độ</div>
+            <div class="num" id="statPercent">0%</div>
+          </div>
+        </div>
+
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+      </div>
+
+      <div class="httt-card grades-card">
+        <h3>
+          🎓 Môn học & Điểm số
+          <div style="display: flex; gap: 6px;">
+            <button class="btn" id="exportExcelBtn" type="button" style="padding: 3px 8px; font-size: 11px; background: #c9e4de;">📊 Xuất Excel</button>
+            <button class="btn" id="addCourseBtn" type="button" style="padding: 3px 8px; font-size: 11px;">＋ Thêm môn</button>
+          </div>
+        </h3>
+        <div style="margin-bottom: 4px; font-size: 13px; font-weight: bold; display: flex; flex-wrap: wrap; gap: 4px 18px;">
+          <span>Điểm GPA tích lũy: <span id="gpaDisplay" style="color: #2a75d3; font-size: 15px;">0.00</span> / 4.0</span>
+          <span title="Tổng tín chỉ các môn có điểm trên F (điểm từ 4.0 trở lên)">Số tín chỉ tích lũy: <span id="creditsDisplay" style="color: #2a75d3; font-size: 15px;">0</span></span>
+        </div>
+        <div class="course-table-wrap">
+          <table class="course-table" id="courseTable">
+            <thead>
+              <tr>
+                <th>Môn học</th>
+                <th>Tín</th>
+                <th>Điểm (10)</th>
+                <th>Điểm chữ</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="courseTableBody">            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" id="calendarFooter">
+  <div class="views">
+    <button id="dayView" type="button">Ngày</button>
+    <button id="weekView" class="active" type="button">Tuần</button>
+    <button id="monthViewBtn" type="button">Tháng ▾</button>
+
+    <div class="month-popover" id="monthPopover" hidden>
+      <div class="month-popover-header">
+        <button type="button" class="month-nav-btn" id="popPrevMonth">&lt;</button>
+        <span id="popMonthYearLabel">Tháng 11, 2026</span>
+        <button type="button" class="month-nav-btn" id="popNextMonth">&gt;</button>
+      </div>
+      <div class="month-popover-weekdays">
+        <div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>CN</div>
+      </div>
+      <div class="month-popover-grid" id="popDaysGrid"></div>
+    </div>
+  </div>
+
+  <div class="actions" id="footerActions">
+    <button class="btn" id="save" type="button">Lưu</button>
+    <button class="btn" id="paste" type="button">Dán</button>
+    <button class="btn" id="clear" type="button">Xóa</button>
+  </div>
+
+  <div style="display:flex; gap:10px; justify-self:end;">
+    <button class="btn add" id="add" type="button">＋ Thêm</button>
+  </div>
+</footer>
+
+<div class="modal-backdrop" id="timerAlertModal" hidden>
+  <div class="timer-modal">
+    <h1 style="font-size: 48px; color: #d9534f; margin: 0 0 16px;">Hết giờ!</h1>
+    <p style="font-size: 16px; margin: 0 0 24px;">Thời gian đếm ngược đã kết thúc. Hãy nghỉ ngơi hoặc chuyển sang nhiệm vụ tiếp theo nhé!</p>
+    <button class="btn" type="button" style="padding: 10px 24px; font-size: 16px;" onclick="byId('timerAlertModal').hidden = true;">Đã hiểu</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="backdrop" hidden>
+  <form class="modal" id="form">
+    <h2 id="formTitle">Thêm sự kiện</h2>
+    <input id="eventId" type="hidden">
+    <div class="form-grid">
+      <label class="field full">Tên hoạt động<input id="title" required maxlength="80" placeholder="Ví dụ: Java"></label>
+      <label class="field">Ngày<select id="eventDate"></select></label>
+      <label class="field">Bắt đầu<input id="start" type="time" value="08:45" required></label>
+      <label class="field">Kết thúc<input id="end" type="time" value="09:45" required></label>
+      <label class="field" id="repeatWrap">Lặp lại
+        <select id="repeatSelect"><option value="none">Không lặp</option><option value="weekly">🔁 Hàng tuần</option></select>
+      </label>
+      <label class="field" id="repeatUntilWrap" hidden>Lặp đến ngày<input id="repeatUntil" type="date"></label>
+      <div class="field full series-note" id="seriesNote" hidden>🔁 Sự kiện này thuộc chuỗi lặp hàng tuần. Khi lưu hoặc xóa, bạn sẽ được chọn áp dụng cho một sự kiện hay cả chuỗi.</div>
+      <label class="field full">Mô tả<textarea id="description"></textarea></label>
+      <div class="field full">Màu sự kiện
+        <div class="palette" id="eventPalette"></div>
+        <input id="customEventColor" type="color" hidden>
+        <input id="eventColor" type="hidden" value="#C6DEF1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="freeSlotBtn" title="Tìm khoảng trống trong ngày để chọn giờ" style="margin-right: auto;">Gợi ý giờ trống</button>
+      <button type="button" class="btn delete" id="deleteEvent" hidden>Xóa sự kiện</button>
+      <button type="button" class="btn" id="cancel">Hủy</button>
+      <button class="btn" type="submit">Lưu sự kiện</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="docBackdrop" hidden>
+  <form class="modal" id="docFormModal">
+    <h2 id="docFormTitle">Thêm tài liệu học phần</h2>
+    <input id="docId" type="hidden">
+    <div class="form-grid">
+      <label class="field full">Tên tài liệu / Tiêu đề<input id="docTitleInput" required placeholder="Ví dụ: Slide bài giảng Chương 1..."></label>
+      <label class="field full">Tên môn học<input id="docSubjectInput" required placeholder="Ví dụ: Hệ thống thông tin"></label>
+      <label class="field full">Đường dẫn liên kết (Link Drive/PDF)<input id="docLinkInput" placeholder="https://..."></label>
+      <label class="field full">Tải tệp đính kèm (PDF, ảnh, tài liệu)<input id="docFileInput" type="file"></label>
+      <label class="field full">Ghi chú / Tóm tắt nội dung<textarea id="docDescInput" placeholder="Ý chính, công thức hoặc lưu ý ôn tập..."></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn delete" id="deleteDocBtn" hidden>Xóa tài liệu</button>
+      <button type="button" class="btn" id="cancelDocBtn">Hủy</button>
+      <button class="btn" type="submit">Lưu tài liệu</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="taskBackdrop" hidden>
+  <form class="modal" id="taskFormModal">
+    <h2 id="taskFormTitle">Thêm nhiệm vụ</h2>
+    <input id="taskId" type="hidden">
+    <div class="form-grid">
+      <label class="field full">Tên nhiệm vụ<input id="taskTitleInput" required maxlength="100" placeholder="Ví dụ: Làm bài tập lớn..."></label>
+      <label class="field">Ngày hạn chót<input id="taskDateInput" type="date"></label>
+      <label class="field">Giờ hạn chót<input id="taskTimeInput" type="time"></label>
+      <label class="field">Môn học<select id="taskSubjectInput"></select></label>
+      <label class="field">Ưu tiên
+        <select id="taskPriorityInput"><option value="high">🔴 Cao</option><option value="mid" selected>🟡 Vừa</option><option value="low">🟢 Thấp</option></select>
+      </label>
+      <label class="field full">Dự kiến (giờ)<input id="taskEstimateInput" type="number" min="0" max="200" step="0.5" placeholder="Ví dụ: 2 (có thể bỏ trống)"></label>
+      <label class="field full">Mô tả chi tiết<textarea id="taskDescInput" placeholder="Ghi chú thêm..."></textarea></label>
+      <div class="field full">Màu nhiệm vụ
+        <div class="palette" id="taskPaletteContainer"></div>
+        <input id="taskColorInput" type="hidden" value="#C6DEF1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn delete" id="deleteTaskBtn" hidden>Xóa nhiệm vụ</button>
+      <button type="button" class="btn" id="cancelTaskBtn">Hủy</button>
+      <button class="btn" type="submit">Lưu nhiệm vụ</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="courseBackdrop" hidden>
+  <form class="modal" id="courseFormModal">
+    <h2 id="courseFormTitle">Thêm môn học</h2>
+    <input id="courseId" type="hidden">
+    <div class="form-grid">
+      <label class="field full">Tên môn học<input id="courseNameInput" required placeholder="Ví dụ: Hệ thống thông tin"></label>
+      <label class="field">Số tín chỉ<input id="courseCreditsInput" type="number" min="1" max="10" value="3" required></label>
+      <label class="field">Điểm tổng kết (Thang 10)<input id="courseScoreInput" type="number" step="0.1" min="0" max="10" value="8.5" required></label>
+    </div>
+    <div class="modal-actions">
+      <label class="pending-check"><input type="checkbox" id="coursePendingInput"> Chưa thi</label>
+      <button type="button" class="btn" id="cancelCourseBtn">Hủy</button>
+      <button class="btn" type="submit">Lưu môn học</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="loginBackdrop" hidden>
+  <form class="modal" id="loginForm">
+    <h2>Đăng nhập</h2>
+    <label class="field">Tên đăng nhập<input id="loginUsername" autocomplete="username" required placeholder="Nhập tên đăng nhập"></label>
+    <label class="field">Mật khẩu<input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Nhập mật khẩu"></label>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="closeLogin">Đóng</button>
+      <button type="submit" class="btn">Đăng nhập</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="registerBackdrop" hidden>
+  <form class="modal" id="registerForm">
+    <h2>Đăng ký</h2>
+    <label class="field">Tên đăng nhập<input id="registerUsername" autocomplete="username" required minlength="3" maxlength="24" placeholder="Từ 3 đến 24 ký tự"></label>
+    <label class="field">Mật khẩu<input id="registerPassword" type="password" autocomplete="new-password" required minlength="4" placeholder="Ít nhất 4 ký tự"></label>
+    <label class="field">Nhập lại mật khẩu<input id="registerConfirm" type="password" autocomplete="new-password" required placeholder="Ít nhất 4 ký tự"></label>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="closeRegister">Đóng</button>
+      <button type="submit" class="btn">Tạo tài khoản</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="sessionBackdrop" hidden>
+  <form class="modal" id="sessionForm" style="width: min(400px, 100%);">
+    <h2>Ghi giờ học</h2>
+    <div class="form-grid">
+      <label class="field">Ngày<input id="sessionDate" type="date" required></label>
+      <label class="field">Số phút<input id="sessionMinutes" type="number" min="1" max="600" value="60" required></label>
+      <label class="field full">Môn học<select id="sessionSubject"></select></label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="cancelSession">Hủy</button>
+      <button class="btn" type="submit">Lưu</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="seriesBackdrop" hidden>
+  <div class="modal" style="width: min(440px, 100%);">
+    <h2 id="seriesTitle">Sự kiện lặp lại</h2>
+    <p id="seriesText" style="margin: 0 0 16px; line-height: 1.5;"></p>
+    <div class="modal-actions" style="flex-wrap: wrap;">
+      <button type="button" class="btn" id="seriesCancel">Hủy</button>
+      <button type="button" class="btn" id="seriesOne">Chỉ sự kiện này</button>
+      <button type="button" class="btn" id="seriesAll" style="background: var(--pink); border-color: #d7a6c1;">Cả chuỗi</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="slotBackdrop" hidden>
+  <div class="modal" style="width: min(460px, 100%);">
+    <h2>Gợi ý khung giờ trống</h2>
+    <div class="form-grid">
+      <label class="field">Ngày<select id="slotDay"></select></label>
+      <label class="field">Trống ít nhất<select id="slotMin"><option value="45">45 phút</option><option value="60">1 giờ</option><option value="90">1 giờ 30</option><option value="120">2 giờ</option></select></label>
+    </div>
+    <div id="slotList" class="slot-list"></div>
+    <div class="modal-actions"><button type="button" class="btn" id="closeSlots">Đóng</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="examBackdrop" hidden>
+  <form class="modal" id="examForm" style="width: min(460px, 100%);">
+    <h2 id="examFormTitle">Thêm kỳ thi</h2>
+    <input id="examId" type="hidden">
+    <div class="form-grid">
+      <label class="field full">Môn thi<input id="examName" list="examNameList" required maxlength="60" placeholder="Ví dụ: Cơ sở dữ liệu"><datalist id="examNameList"></datalist></label>
+      <label class="field full">Ngày thi<input id="examDate" type="date" required></label>
+      <div class="field full series-note">
+        <b>📚 Tạo lịch ôn tập</b>
+        <span>Chia đều các buổi ôn vào những khung giờ trống trong Lịch học, từ hôm nay đến trước ngày thi.</span>
+        <div class="form-grid" style="margin-top: 6px;">
+          <label class="field" style="margin: 0;">Số buổi ôn<input id="reviewCount" type="number" min="1" max="14" value="5"></label>
+          <label class="field" style="margin: 0;">Mỗi buổi (phút)<input id="reviewLen" type="number" min="30" max="240" step="15" value="90"></label>
+        </div>
+        <button type="button" class="btn" id="makeReviewBtn" style="margin-top: 6px;">📚 Lưu kỳ thi và tạo lịch ôn tập</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn delete" id="deleteExamBtn" hidden>Xóa kỳ thi</button>
+      <button type="button" class="btn" id="cancelExamBtn">Hủy</button>
+      <button class="btn" type="submit">Lưu kỳ thi</button>
+    </div>
+  </form>
+</div>
+
+<input type="file" id="backupFile" accept=".json,application/json" hidden>
+<div class="toast" id="toast"></div>
+</body>
+
+</html>
